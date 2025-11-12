@@ -3,7 +3,7 @@
   "displayName": "Barrel Me",
   "description": "Generate Dart barrel files easily for Flutter and Dart projects",
   "version": "0.0.1",
-  "publisher": "your-publisher-name",
+  "publisher": "arturograu",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.80.0"
@@ -83,7 +83,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/barrel-me"
+    "url": "https://github.com/arturograu/barrel_me"
   },
   "license": "MIT"
 }
