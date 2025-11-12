@@ -14,7 +14,7 @@ A Visual Studio Code extension for Dart and Flutter projects that makes creating
 
 🔄 **Smart Detection**: Automatically excludes existing barrel files and main.dart.
 
-🚀 **Quick Creation**: Press Enter without typing to automatically use the folder name as the barrel name.
+🚀 **Zero Configuration**: Automatically uses the folder name as the barrel filename - just right-click and go!
 
 🛡️ **Conflict Prevention**: Detects files with the same name as folders and creates `{name}_barrel.dart` instead of overwriting your code.
 
@@ -26,8 +26,7 @@ A Visual Studio Code extension for Dart and Flutter projects that makes creating
 
 1. **Right-click** on a folder in your Dart or Flutter project
 2. Select **"Create Barrel"** from the context menu
-3. Enter a name for your barrel file (e.g., `auth`, `models`) or press Enter to use the folder name
-4. The barrel file(s) will be created automatically
+3. Done! The barrel file(s) are created automatically using the folder name
 
 The extension will:
 
@@ -55,7 +54,9 @@ lib/features/auth/
 
 ### Non-Recursive Mode (default)
 
-Right-click on `auth/` → "Create Barrel" → Press Enter (or type `auth`):
+Right-click on `auth/` → "Create Barrel":
+
+**Generated `auth/auth.dart`:**
 
 ```dart
 export 'login_page.dart';
@@ -64,11 +65,11 @@ export 'signup_page.dart';
 
 This creates a single barrel file (`auth.dart`) that exports **only the Dart files in the current directory** - subdirectories are ignored.
 
-> **💡 Tip:** Just press Enter to automatically use the folder name (`auth`) as the barrel filename!
+> **💡 Tip:** The barrel filename automatically matches the folder name!
 
 ### Recursive Mode (when enabled in settings)
 
-With `barrelMe.recursive: true`, right-click on `auth/` → "Create Barrel" → Press Enter:
+With `barrelMe.recursive: true`, right-click on `auth/` → "Create Barrel":
 
 This creates **hierarchical barrel files**:
 
