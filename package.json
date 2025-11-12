@@ -1,0 +1,89 @@
+{
+  "name": "barrel-me",
+  "displayName": "Barrel Me",
+  "description": "Generate Dart barrel files easily for Flutter and Dart projects",
+  "version": "0.0.1",
+  "publisher": "your-publisher-name",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "dart",
+    "flutter",
+    "barrel",
+    "export",
+    "code generation"
+  ],
+  "activationEvents": [
+    "onLanguage:dart"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "barrel-me.create",
+        "title": "Create Barrel"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "barrel-me.create",
+          "when": "explorerResourceIsFolder",
+          "group": "2_workspace"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Barrel Me",
+      "properties": {
+        "barrelMe.exclude": {
+          "type": "array",
+          "default": [
+            "test",
+            "generated"
+          ],
+          "description": "Folders to exclude when scanning for Dart files"
+        },
+        "barrelMe.recursive": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include subfolders when scanning for Dart files"
+        },
+        "barrelMe.excludeFiles": {
+          "type": "array",
+          "default": [
+            "main.dart"
+          ],
+          "description": "Files to exclude from barrel exports"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^18.x",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.4.0",
+    "@typescript-eslint/parser": "^6.4.0",
+    "eslint": "^8.47.0",
+    "typescript": "^5.1.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/barrel-me"
+  },
+  "license": "MIT"
+}
