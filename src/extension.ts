@@ -184,7 +184,9 @@ async function createHierarchicalBarrels(
   }
 
   // Create barrel files in each subdirectory
-  const subfolderBarrels: string[] = [];
+  const subfolderBarrels: { subdir: string; barrelFileName: string }[] = [];
+  const singleFileSubfolders: string[] = []; // Track subfolders with only one file
+
   for (const subdir of subdirs) {
     const subdirPath = path.join(folderPath, subdir);
     const dartFiles = await scanForDartFiles(
@@ -194,19 +196,47 @@ async function createHierarchicalBarrels(
       false // Non-recursive for each subfolder
     );
 
-    if (dartFiles.length > 0) {
-      const barrelContent = generateBarrelContent(dartFiles, subdirPath);
-      const barrelFileName = `${subdir}.dart`;
-      const barrelFilePath = path.join(subdirPath, barrelFileName);
+    // If no files, skip
+    if (dartFiles.length === 0) {
+      continue;
+    }
 
+    // If only one file, track it for direct export (no barrel needed)
+    if (dartFiles.length === 1) {
+      singleFileSubfolders.push(dartFiles[0]);
+      continue;
+    }
+
+    // Check if a file with the same name as the folder exists
+    const conflictingFile = path.join(subdirPath, `${subdir}.dart`);
+    const hasConflict =
+      fs.existsSync(conflictingFile) && !isBarrelFile(conflictingFile);
+
+    // Determine barrel filename
+    const barrelFileName = hasConflict
+      ? `${subdir}_barrel.dart`
+      : `${subdir}.dart`;
+    const barrelFilePath = path.join(subdirPath, barrelFileName);
+
+    // Generate barrel content (excluding the barrel file itself from exports)
+    const filesToExport = dartFiles.filter(
+      (f) => path.basename(f) !== barrelFileName
+    );
+
+    if (filesToExport.length > 0) {
+      const barrelContent = generateBarrelContent(filesToExport, subdirPath);
       fs.writeFileSync(barrelFilePath, barrelContent, "utf8");
       createdFiles.push(barrelFilePath);
-      subfolderBarrels.push(subdir);
+      subfolderBarrels.push({ subdir, barrelFileName });
     }
   }
 
   // Create parent barrel file that exports subfolder barrels and root files
-  if (subfolderBarrels.length > 0 || rootFiles.length > 0) {
+  if (
+    subfolderBarrels.length > 0 ||
+    rootFiles.length > 0 ||
+    singleFileSubfolders.length > 0
+  ) {
     const exports: string[] = [];
 
     // Export root-level files
@@ -216,9 +246,16 @@ async function createHierarchicalBarrels(
       exports.push(`export '${normalizedPath}';`);
     }
 
+    // Export single files from subfolders (no barrel needed)
+    for (const file of singleFileSubfolders) {
+      const relativePath = path.relative(folderPath, file);
+      const normalizedPath = relativePath.split(path.sep).join("/");
+      exports.push(`export '${normalizedPath}';`);
+    }
+
     // Export subfolder barrels
-    for (const subdir of subfolderBarrels) {
-      exports.push(`export '${subdir}/${subdir}.dart';`);
+    for (const { subdir, barrelFileName } of subfolderBarrels) {
+      exports.push(`export '${subdir}/${barrelFileName}';`);
     }
 
     const barrelContent = exports.sort().join("\n") + "\n";

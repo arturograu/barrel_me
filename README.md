@@ -16,6 +16,8 @@ A Visual Studio Code extension for Dart and Flutter projects that makes creating
 
 🚀 **Quick Creation**: Press Enter without typing to automatically use the folder name as the barrel name.
 
+🛡️ **Conflict Prevention**: Detects files with the same name as folders and creates `{name}_barrel.dart` instead of overwriting your code.
+
 ## Usage
 
 ### Creating a Barrel File
@@ -92,10 +94,37 @@ export 'widgets/widgets.dart';
 
 This hierarchical approach:
 
-- ✅ Creates a barrel file in each subfolder
+- ✅ Creates a barrel file in each subfolder (only if it has 2+ files)
 - ✅ Parent barrel exports subfolder barrels (not individual files)
 - ✅ Better organization for large codebases
 - ✅ Each module can be imported independently
+- ✅ **Smart conflict resolution**: If a file has the same name as its folder, the barrel is named `{folder}_barrel.dart`
+- ✅ **Single-file optimization**: Subfolders with only one file are exported directly (no barrel created)
+
+### Smart Conflict Resolution
+
+If a subfolder contains a file with the same name as the folder (e.g., `models/models.dart` with actual code), the extension automatically creates the barrel as `{folder}_barrel.dart` to prevent overwriting your code:
+
+**Example:**
+
+```
+auth/models/
+  ├── models.dart      (your actual code)
+  └── user.dart
+```
+
+**Generated `auth/models/models_barrel.dart`:**
+
+```dart
+export 'models.dart';
+export 'user.dart';
+```
+
+**Parent `auth/auth.dart`:**
+
+```dart
+export 'models/models_barrel.dart';
+```
 
 ### Automatic Naming
 
