@@ -8,13 +8,17 @@ A Visual Studio Code extension for Dart and Flutter projects that makes creating
 
 🏗️ **Hierarchical Barrel Generation**: Optionally create barrel files in each subfolder, with the parent exporting subfolder barrels for better organization.
 
-🎨 **Intuitive UX**: Inspired by the Flutter Bloc extension, providing a familiar and smooth experience.
-
 ⚙️ **Customizable**: Configure which folders and files to exclude from barrel generation.
 
 🔄 **Smart Detection**: Automatically excludes existing barrel files and main.dart.
 
-🚀 **Quick Creation**: Press Enter without typing to automatically use the folder name as the barrel name.
+🚀 **Zero Configuration**: Automatically uses the folder name as the barrel filename - just right-click and go!
+
+🛡️ **Conflict Prevention**: Detects files with the same name as folders and creates `{name}_barrel.dart` instead of overwriting your code.
+
+🧩 **Part File Support**: Automatically detects and handles Dart's `part`/`part of` system - only exports main files, never part files.
+
+🔄 **Import Migration**: After creating barrels, optionally migrate existing imports to use the new barrel file automatically.
 
 ## Usage
 
@@ -22,8 +26,7 @@ A Visual Studio Code extension for Dart and Flutter projects that makes creating
 
 1. **Right-click** on a folder in your Dart or Flutter project
 2. Select **"Create Barrel"** from the context menu
-3. Enter a name for your barrel file (e.g., `auth`, `models`) or press Enter to use the folder name
-4. The barrel file(s) will be created automatically
+3. Done! The barrel file(s) are created automatically using the folder name
 
 The extension will:
 
@@ -51,7 +54,9 @@ lib/features/auth/
 
 ### Non-Recursive Mode (default)
 
-Right-click on `auth/` → "Create Barrel" → Press Enter (or type `auth`):
+Right-click on `auth/` → "Create Barrel":
+
+**Generated `auth/auth.dart`:**
 
 ```dart
 export 'login_page.dart';
@@ -60,11 +65,11 @@ export 'signup_page.dart';
 
 This creates a single barrel file (`auth.dart`) that exports **only the Dart files in the current directory** - subdirectories are ignored.
 
-> **💡 Tip:** Just press Enter to automatically use the folder name (`auth`) as the barrel filename!
+> **💡 Tip:** The barrel filename automatically matches the folder name!
 
 ### Recursive Mode (when enabled in settings)
 
-With `barrelMe.recursive: true`, right-click on `auth/` → "Create Barrel" → Press Enter:
+With `barrelMe.recursive: true`, right-click on `auth/` → "Create Barrel":
 
 This creates **hierarchical barrel files**:
 
@@ -92,10 +97,59 @@ export 'widgets/widgets.dart';
 
 This hierarchical approach:
 
-- ✅ Creates a barrel file in each subfolder
+- ✅ Creates a barrel file in each subfolder (only if it has 2+ main files)
 - ✅ Parent barrel exports subfolder barrels (not individual files)
 - ✅ Better organization for large codebases
 - ✅ Each module can be imported independently
+- ✅ **Smart conflict resolution**: If a file has the same name as its folder, the barrel is named `{folder}_barrel.dart`
+- ✅ **Single-file optimization**: Subfolders with only one main file are exported directly (no barrel created)
+- ✅ **Part file handling**: Automatically excludes part files - only main files are exported
+
+### Smart Conflict Resolution
+
+If a subfolder contains a file with the same name as the folder (e.g., `models/models.dart` with actual code), the extension automatically creates the barrel as `{folder}_barrel.dart` to prevent overwriting your code:
+
+**Example:**
+
+```
+auth/models/
+  ├── models.dart      (your actual code)
+  └── user.dart
+```
+
+**Generated `auth/models/models_barrel.dart`:**
+
+```dart
+export 'models.dart';
+export 'user.dart';
+```
+
+**Parent `auth/auth.dart`:**
+
+```dart
+export 'models/models_barrel.dart';
+```
+
+### Part File Support
+
+The extension intelligently handles Dart's `part` and `part of` system. Part files are automatically excluded from barrel exports - only the main file is exported.
+
+**Example:**
+
+```
+models/
+  ├── user.dart           (main file with 'part' directives)
+  ├── user.g.dart         (part file with 'part of user.dart')
+  └── user.freezed.dart   (part file with 'part of user.dart')
+```
+
+**Generated `models/models.dart`:**
+
+```dart
+export 'user.dart';  // Only the main file, not the parts
+```
+
+**Optimization:** If a subfolder only has one main file (even with multiple part files), no barrel is created - the main file is exported directly in the parent barrel.
 
 ### Automatic Naming
 
@@ -109,6 +163,42 @@ When you press Enter without typing a name, the extension automatically converts
 | `shopping_cart` | `shopping_cart.dart` |
 
 You can always override this by typing a custom name before pressing Enter.
+
+### Import Migration
+
+After creating a barrel file, the extension will ask if you want to migrate existing imports. This feature automatically:
+
+**Before migration:**
+
+```dart
+// feature/user_profile.dart
+import '../auth/login_page.dart';
+import '../auth/signup_page.dart';
+import '../auth/models/user.dart';
+```
+
+**After migration:**
+
+```dart
+// feature/user_profile.dart
+import '../auth/auth.dart';  // Single import!
+```
+
+**How it works:**
+
+1. Creates your barrel file(s)
+2. Shows prompt: "🔄 Migrate existing imports to use the new barrel file?"
+3. If you click "Yes", scans all Dart files in your workspace
+4. Finds imports from the barrel folder
+5. Replaces them with a single barrel import
+6. Shows summary: "✅ Migrated X import(s) in Y file(s)"
+
+**Benefits:**
+
+- ✅ Automatically updates your entire codebase
+- ✅ Cleaner imports throughout your project
+- ✅ Safe: Only processes relative imports (skips `package:` and `dart:`)
+- ✅ Smart: Skips files inside the barrel folder itself
 
 ## Configuration
 

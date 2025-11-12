@@ -2,6 +2,60 @@
 
 All notable changes to the "Barrel Me" extension will be documented in this file.
 
+## [0.1.0]
+
+### Added
+
+- **Deep Recursion**: True infinite-depth recursion for nested barrel creation
+
+  - Processes all subdirectory levels, not just immediate children
+  - Creates hierarchical barrel structure at any depth
+  - Perfect for complex folder structures with multiple nesting levels
+
+- **Import Migration System**: Automatic import migration to barrel files
+
+  - Post-creation prompt to migrate existing imports
+  - Scans entire workspace for imports from barrel folder
+  - Replaces multiple imports with single barrel import
+  - Summary report showing migrated files and import counts
+
+- **Package Import Support**: Full support for `package:` imports
+
+  - Detects and reads package name from `pubspec.yaml`
+  - Handles both relative and package imports
+  - Converts `package:your_app/path/to/file.dart` to `package:your_app/path/barrel.dart`
+  - Preserves import style (package vs relative) based on original usage
+
+- **Automatic Barrel Naming**: Removed manual naming step
+
+  - Automatically uses folder name as barrel name
+  - Converts folder names to snake_case following Dart conventions
+  - Zero friction workflow, just right-click and create
+
+- **Part File Detection**: Smart handling of Dart part files
+
+  - Automatically detects `part of` directives
+  - Excludes part files from barrel exports
+  - Only exports main files (e.g., includes `user.dart`, excludes `user.g.dart`, `user.freezed.dart`)
+  - Works with json_serializable, freezed, and custom part files
+
+- **Conflict Resolution**: Smart barrel file naming
+
+  - Detects when a file has the same name as its folder
+  - Creates `{folder}_barrel.dart` instead of overwriting existing code
+  - Prevents data loss from name conflicts
+
+- **Single-File Optimization**: Skip unnecessary barrels
+  - Subfolders with only one main file don't get a barrel
+  - Single file is exported directly in parent barrel
+  - Cleaner structure with fewer unnecessary files
+
+### Fixed
+
+- Recursive mode now processes all nesting levels (was limited to 1 level)
+- Import migration now handles package imports from same project
+- Better path resolution for complex project structures
+
 ## [0.0.1]
 
 ### Added
