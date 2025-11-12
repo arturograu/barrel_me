@@ -242,7 +242,7 @@ async function scanForDartFiles(
 ): Promise<string[]> {
   const dartFiles: string[] = [];
 
-  function scanDirectory(dirPath: string, isRoot: boolean = false) {
+  function scanDirectory(dirPath: string) {
     const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
     for (const entry of entries) {
@@ -254,9 +254,9 @@ async function scanForDartFiles(
           continue;
         }
 
-        // Only recurse if recursive is enabled or if we're at the root level
-        if (recursive || isRoot) {
-          scanDirectory(fullPath, false);
+        // Only recurse if recursive mode is enabled
+        if (recursive) {
+          scanDirectory(fullPath);
         }
       } else if (entry.isFile() && entry.name.endsWith(".dart")) {
         if (excludeFiles.includes(entry.name)) {
@@ -272,7 +272,7 @@ async function scanForDartFiles(
     }
   }
 
-  scanDirectory(folderPath, true);
+  scanDirectory(folderPath);
   return dartFiles;
 }
 

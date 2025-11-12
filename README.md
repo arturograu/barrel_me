@@ -30,9 +30,9 @@ The extension will:
 - Scan the selected folder for `.dart` files
 - Exclude `main.dart` and existing barrel files
 - Generate barrel file(s) with all necessary exports:
-  - **Non-recursive mode**: Single barrel in the current folder
-  - **Recursive mode**: Hierarchical barrels in each subfolder + parent barrel
-- Open the parent barrel file for you to review
+  - **Non-recursive mode** (default): Single barrel file exporting only files in the current directory (subdirectories ignored)
+  - **Recursive mode**: Hierarchical barrels in each subfolder + parent barrel that exports the subfolder barrels
+- Open the barrel file for you to review
 
 ### Example
 
@@ -58,7 +58,7 @@ export 'login_page.dart';
 export 'signup_page.dart';
 ```
 
-This creates a single barrel file that exports only the files in the current directory.
+This creates a single barrel file (`auth.dart`) that exports **only the Dart files in the current directory** - subdirectories are ignored.
 
 > **💡 Tip:** Just press Enter to automatically use the folder name (`auth`) as the barrel filename!
 
