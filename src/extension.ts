@@ -104,6 +104,7 @@ async function handleHierarchicalMode(
 
   const parentBarrelPath = path.join(folderPath, `${barrelName}.dart`);
   await openFileInEditor(parentBarrelPath);
+  await offerImportMigration(folderPath, barrelName);
 }
 
 /**
@@ -157,6 +158,7 @@ async function handleSingleBarrelMode(
   );
 
   await openFileInEditor(barrelFilePath);
+  await offerImportMigration(folderPath, barrelName);
 }
 
 /**
@@ -242,7 +244,7 @@ async function processAllSubdirectories(
 }
 
 /**
- * Processes a single subdirectory and determines if it needs a barrel file
+ * Processes a single subdirectory recursively and determines if it needs a barrel file
  */
 async function processSubdirectory(
   folderPath: string,
@@ -251,6 +253,28 @@ async function processSubdirectory(
   excludeFiles: string[]
 ): Promise<SubdirectoryResult> {
   const subdirPath = path.join(folderPath, subdir);
+  const nestedBarrels = await createHierarchicalBarrels(
+    subdirPath,
+    subdir,
+    excludeFolders,
+    excludeFiles
+  );
+
+  // If nested barrels were created, this directory has a barrel now
+  if (nestedBarrels.length > 0) {
+    const barrelFileName = determineBarrelFileName(subdirPath, subdir);
+    const barrelFilePath = path.join(subdirPath, barrelFileName);
+
+    if (fs.existsSync(barrelFilePath)) {
+      return {
+        type: "barrel_created",
+        barrelPath: barrelFilePath,
+        barrelFileName,
+      };
+    }
+  }
+
+  // If no nested barrels, check files in current directory only
   const dartFiles = await scanForDartFiles(
     subdirPath,
     excludeFolders,
@@ -516,6 +540,321 @@ function toSnakeCase(str: string): string {
 function getDefaultBarrelName(folderPath: string): string {
   const folderName = path.basename(folderPath);
   return toSnakeCase(folderName);
+}
+
+/**
+ * Offers to migrate imports to use the new barrel file
+ */
+async function offerImportMigration(
+  folderPath: string,
+  barrelName: string
+): Promise<void> {
+  const response = await vscode.window.showInformationMessage(
+    "🔄 Migrate existing imports to use the new barrel file?",
+    "Yes",
+    "No"
+  );
+
+  if (response === "Yes") {
+    await migrateImportsToBarrel(folderPath, barrelName);
+  }
+}
+
+/**
+ * Migrates imports from individual files to the barrel file
+ */
+async function migrateImportsToBarrel(
+  barrelFolderPath: string,
+  barrelName: string
+): Promise<void> {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders) {
+    return;
+  }
+
+  const workspaceRoot = workspaceFolders[0].uri.fsPath;
+  const packageName = await getPackageName(workspaceRoot);
+  const dartFiles = await findAllDartFiles(workspaceRoot);
+
+  let migratedFilesCount = 0;
+  let migratedImportsCount = 0;
+
+  for (const filePath of dartFiles) {
+    // Skip files inside the barrel folder itself
+    if (filePath.startsWith(barrelFolderPath)) {
+      continue;
+    }
+
+    const result = await migrateImportsInFile(
+      filePath,
+      barrelFolderPath,
+      barrelName,
+      workspaceRoot,
+      packageName
+    );
+
+    if (result.migrated) {
+      migratedFilesCount++;
+      migratedImportsCount += result.count;
+    }
+  }
+
+  if (migratedFilesCount > 0) {
+    vscode.window.showInformationMessage(
+      `✅ Migrated ${migratedImportsCount} import(s) in ${migratedFilesCount} file(s)`
+    );
+  } else {
+    vscode.window.showInformationMessage(
+      "ℹ️ No imports found that need migration"
+    );
+  }
+}
+
+/**
+ * Gets the package name from pubspec.yaml
+ */
+async function getPackageName(workspaceRoot: string): Promise<string | null> {
+  const pubspecPath = path.join(workspaceRoot, "pubspec.yaml");
+
+  if (!fs.existsSync(pubspecPath)) {
+    return null;
+  }
+
+  try {
+    const content = fs.readFileSync(pubspecPath, "utf8");
+    const lines = content.split("\n");
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("name:")) {
+        const packageName = trimmed.substring(5).trim();
+        return packageName;
+      }
+    }
+  } catch (error) {
+    // Ignore errors
+  }
+
+  return null;
+}
+
+/**
+ * Finds all Dart files in the workspace
+ */
+async function findAllDartFiles(rootPath: string): Promise<string[]> {
+  const files: string[] = [];
+
+  function scanDir(dirPath: string) {
+    try {
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name);
+
+        // Skip common folders to ignore
+        if (
+          entry.isDirectory() &&
+          [
+            "node_modules",
+            ".dart_tool",
+            "build",
+            ".git",
+            ".idea",
+            "generated",
+          ].includes(entry.name)
+        ) {
+          continue;
+        }
+
+        if (entry.isDirectory()) {
+          scanDir(fullPath);
+        } else if (entry.isFile() && entry.name.endsWith(".dart")) {
+          files.push(fullPath);
+        }
+      }
+    } catch (error) {
+      // Skip directories we can't read
+    }
+  }
+
+  scanDir(rootPath);
+  return files;
+}
+
+/**
+ * Migrates imports in a single file
+ */
+async function migrateImportsInFile(
+  filePath: string,
+  barrelFolderPath: string,
+  barrelName: string,
+  workspaceRoot: string,
+  packageName: string | null
+): Promise<{ migrated: boolean; count: number }> {
+  const content = fs.readFileSync(filePath, "utf8");
+  const lines = content.split("\n");
+
+  const importLines: number[] = [];
+  const importsToReplace: Set<string> = new Set();
+  let usePackageImport = false;
+
+  // Find imports from the barrel folder
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith("import ") && line.includes("'")) {
+      const importPath = extractImportPath(line);
+      if (
+        importPath &&
+        isImportFromBarrelFolder(
+          filePath,
+          importPath,
+          barrelFolderPath,
+          workspaceRoot,
+          packageName
+        )
+      ) {
+        importLines.push(i);
+        importsToReplace.add(line);
+        // Check if any of the imports use package: format
+        if (importPath.startsWith("package:")) {
+          usePackageImport = true;
+        }
+      }
+    }
+  }
+
+  if (importLines.length === 0) {
+    return { migrated: false, count: 0 };
+  }
+
+  const barrelImportPath = calculateBarrelImportPath(
+    filePath,
+    barrelFolderPath,
+    barrelName,
+    workspaceRoot,
+    packageName,
+    usePackageImport
+  );
+
+  const newLines = [...lines];
+  const firstImportIndex = importLines[0];
+
+  // Remove old import lines (in reverse to maintain indices)
+  for (let i = importLines.length - 1; i >= 0; i--) {
+    newLines.splice(importLines[i], 1);
+  }
+
+  // Add barrel import at the position of the first old import
+  newLines.splice(firstImportIndex, 0, `import '${barrelImportPath}';`);
+
+  // Write back the file
+  fs.writeFileSync(filePath, newLines.join("\n"), "utf8");
+
+  return { migrated: true, count: importLines.length };
+}
+
+/**
+ * Extracts the import path from an import statement
+ */
+function extractImportPath(importLine: string): string | null {
+  const match = importLine.match(/import\s+['"]([^'"]+)['"]/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Checks if an import is from the barrel folder
+ */
+function isImportFromBarrelFolder(
+  currentFilePath: string,
+  importPath: string,
+  barrelFolderPath: string,
+  workspaceRoot: string,
+  packageName: string | null
+): boolean {
+  // Skip dart: imports
+  if (importPath.startsWith("dart:")) {
+    return false;
+  }
+
+  // Handle package: imports
+  if (importPath.startsWith("package:")) {
+    if (!packageName) {
+      return false;
+    }
+
+    // Check if it's from the same package
+    const packagePrefix = `package:${packageName}/`;
+    if (!importPath.startsWith(packagePrefix)) {
+      return false;
+    }
+
+    // Extract the path after package:packageName/
+    const relativePath = importPath.substring(packagePrefix.length);
+
+    // Convert to absolute path
+    const libPath = path.join(workspaceRoot, "lib");
+    const resolvedImportPath = path.join(libPath, relativePath);
+    const normalizedBarrelPath = path.normalize(barrelFolderPath);
+
+    // Check if the import is from within the barrel folder
+    return resolvedImportPath.startsWith(normalizedBarrelPath);
+  }
+
+  // Handle relative imports
+  const currentDir = path.dirname(currentFilePath);
+  const resolvedImportPath = path.resolve(currentDir, importPath);
+  const normalizedBarrelPath = path.normalize(barrelFolderPath);
+
+  // Check if the import is from within the barrel folder
+  return resolvedImportPath.startsWith(normalizedBarrelPath);
+}
+
+/**
+ * Calculates the import path for the barrel (package or relative)
+ */
+function calculateBarrelImportPath(
+  fromFilePath: string,
+  barrelFolderPath: string,
+  barrelName: string,
+  workspaceRoot: string,
+  packageName: string | null,
+  usePackageImport: boolean
+): string {
+  // If using package imports and we have a package name
+  if (usePackageImport && packageName) {
+    const libPath = path.join(workspaceRoot, "lib");
+    const barrelFilePath = path.join(barrelFolderPath, `${barrelName}.dart`);
+
+    // Get path relative to lib folder
+    const relativeToLib = path.relative(libPath, barrelFilePath);
+
+    // Convert to package import
+    const packagePath = relativeToLib.split(path.sep).join("/");
+    return `package:${packageName}/${packagePath}`;
+  }
+
+  // Otherwise use relative import
+  return calculateRelativeBarrelPath(
+    fromFilePath,
+    barrelFolderPath,
+    barrelName
+  );
+}
+
+/**
+ * Calculates the relative path from a file to the barrel
+ */
+function calculateRelativeBarrelPath(
+  fromFilePath: string,
+  barrelFolderPath: string,
+  barrelName: string
+): string {
+  const fromDir = path.dirname(fromFilePath);
+  const barrelFilePath = path.join(barrelFolderPath, `${barrelName}.dart`);
+  const relativePath = path.relative(fromDir, barrelFilePath);
+
+  // Normalize to use forward slashes for Dart imports
+  return relativePath.split(path.sep).join("/");
 }
 
 export function deactivate() {}

@@ -8,8 +8,6 @@ A Visual Studio Code extension for Dart and Flutter projects that makes creating
 
 🏗️ **Hierarchical Barrel Generation**: Optionally create barrel files in each subfolder, with the parent exporting subfolder barrels for better organization.
 
-🎨 **Intuitive UX**: Inspired by the Flutter Bloc extension, providing a familiar and smooth experience.
-
 ⚙️ **Customizable**: Configure which folders and files to exclude from barrel generation.
 
 🔄 **Smart Detection**: Automatically excludes existing barrel files and main.dart.
@@ -19,6 +17,8 @@ A Visual Studio Code extension for Dart and Flutter projects that makes creating
 🛡️ **Conflict Prevention**: Detects files with the same name as folders and creates `{name}_barrel.dart` instead of overwriting your code.
 
 🧩 **Part File Support**: Automatically detects and handles Dart's `part`/`part of` system - only exports main files, never part files.
+
+🔄 **Import Migration**: After creating barrels, optionally migrate existing imports to use the new barrel file automatically.
 
 ## Usage
 
@@ -163,6 +163,42 @@ When you press Enter without typing a name, the extension automatically converts
 | `shopping_cart` | `shopping_cart.dart` |
 
 You can always override this by typing a custom name before pressing Enter.
+
+### Import Migration
+
+After creating a barrel file, the extension will ask if you want to migrate existing imports. This feature automatically:
+
+**Before migration:**
+
+```dart
+// feature/user_profile.dart
+import '../auth/login_page.dart';
+import '../auth/signup_page.dart';
+import '../auth/models/user.dart';
+```
+
+**After migration:**
+
+```dart
+// feature/user_profile.dart
+import '../auth/auth.dart';  // Single import!
+```
+
+**How it works:**
+
+1. Creates your barrel file(s)
+2. Shows prompt: "🔄 Migrate existing imports to use the new barrel file?"
+3. If you click "Yes", scans all Dart files in your workspace
+4. Finds imports from the barrel folder
+5. Replaces them with a single barrel import
+6. Shows summary: "✅ Migrated X import(s) in Y file(s)"
+
+**Benefits:**
+
+- ✅ Automatically updates your entire codebase
+- ✅ Cleaner imports throughout your project
+- ✅ Safe: Only processes relative imports (skips `package:` and `dart:`)
+- ✅ Smart: Skips files inside the barrel folder itself
 
 ## Configuration
 
