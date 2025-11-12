@@ -99,14 +99,17 @@ export function activate(context: vscode.ExtensionContext) {
             false
           );
 
-          if (dartFiles.length === 0) {
+          // Filter out part files - we only export main files
+          const mainFiles = filterPartFiles(dartFiles);
+
+          if (mainFiles.length === 0) {
             vscode.window.showWarningMessage(
-              "No Dart files found in the selected folder."
+              "No Dart files found in the selected folder (excluding part files)."
             );
             return;
           }
 
-          const barrelContent = generateBarrelContent(dartFiles, uri.fsPath);
+          const barrelContent = generateBarrelContent(mainFiles, uri.fsPath);
           const barrelFileName = `${barrelName}.dart`;
           const barrelFilePath = path.join(uri.fsPath, barrelFileName);
 
@@ -201,9 +204,17 @@ async function createHierarchicalBarrels(
       continue;
     }
 
-    // If only one file, track it for direct export (no barrel needed)
-    if (dartFiles.length === 1) {
-      singleFileSubfolders.push(dartFiles[0]);
+    // Filter out part files - we only export main files
+    const mainFiles = filterPartFiles(dartFiles);
+
+    // If no main files (only parts), skip
+    if (mainFiles.length === 0) {
+      continue;
+    }
+
+    // If only one main file (with or without parts), track it for direct export (no barrel needed)
+    if (mainFiles.length === 1) {
+      singleFileSubfolders.push(mainFiles[0]);
       continue;
     }
 
@@ -219,7 +230,7 @@ async function createHierarchicalBarrels(
     const barrelFilePath = path.join(subdirPath, barrelFileName);
 
     // Generate barrel content (excluding the barrel file itself from exports)
-    const filesToExport = dartFiles.filter(
+    const filesToExport = mainFiles.filter(
       (f) => path.basename(f) !== barrelFileName
     );
 
@@ -232,15 +243,18 @@ async function createHierarchicalBarrels(
   }
 
   // Create parent barrel file that exports subfolder barrels and root files
+  // Filter out part files from root files
+  const mainRootFiles = filterPartFiles(rootFiles);
+
   if (
     subfolderBarrels.length > 0 ||
-    rootFiles.length > 0 ||
+    mainRootFiles.length > 0 ||
     singleFileSubfolders.length > 0
   ) {
     const exports: string[] = [];
 
-    // Export root-level files
-    for (const file of rootFiles) {
+    // Export root-level main files (excluding part files)
+    for (const file of mainRootFiles) {
       const relativePath = path.relative(folderPath, file);
       const normalizedPath = relativePath.split(path.sep).join("/");
       exports.push(`export '${normalizedPath}';`);
@@ -335,6 +349,31 @@ function isBarrelFile(filePath: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Checks if a file is a part file (contains 'part of' directive)
+ */
+function isPartFile(filePath: string): boolean {
+  try {
+    const content = fs.readFileSync(filePath, "utf8");
+    const lines = content
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    // Check if any line starts with 'part of'
+    return lines.some((line) => line.startsWith("part of "));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Filters out part files and returns only main files that should be exported
+ */
+function filterPartFiles(dartFiles: string[]): string[] {
+  return dartFiles.filter((file) => !isPartFile(file));
 }
 
 /**

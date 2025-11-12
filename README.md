@@ -18,6 +18,8 @@ A Visual Studio Code extension for Dart and Flutter projects that makes creating
 
 🛡️ **Conflict Prevention**: Detects files with the same name as folders and creates `{name}_barrel.dart` instead of overwriting your code.
 
+🧩 **Part File Support**: Automatically detects and handles Dart's `part`/`part of` system - only exports main files, never part files.
+
 ## Usage
 
 ### Creating a Barrel File
@@ -94,12 +96,13 @@ export 'widgets/widgets.dart';
 
 This hierarchical approach:
 
-- ✅ Creates a barrel file in each subfolder (only if it has 2+ files)
+- ✅ Creates a barrel file in each subfolder (only if it has 2+ main files)
 - ✅ Parent barrel exports subfolder barrels (not individual files)
 - ✅ Better organization for large codebases
 - ✅ Each module can be imported independently
 - ✅ **Smart conflict resolution**: If a file has the same name as its folder, the barrel is named `{folder}_barrel.dart`
-- ✅ **Single-file optimization**: Subfolders with only one file are exported directly (no barrel created)
+- ✅ **Single-file optimization**: Subfolders with only one main file are exported directly (no barrel created)
+- ✅ **Part file handling**: Automatically excludes part files - only main files are exported
 
 ### Smart Conflict Resolution
 
@@ -125,6 +128,27 @@ export 'user.dart';
 ```dart
 export 'models/models_barrel.dart';
 ```
+
+### Part File Support
+
+The extension intelligently handles Dart's `part` and `part of` system. Part files are automatically excluded from barrel exports - only the main file is exported.
+
+**Example:**
+
+```
+models/
+  ├── user.dart           (main file with 'part' directives)
+  ├── user.g.dart         (part file with 'part of user.dart')
+  └── user.freezed.dart   (part file with 'part of user.dart')
+```
+
+**Generated `models/models.dart`:**
+
+```dart
+export 'user.dart';  // Only the main file, not the parts
+```
+
+**Optimization:** If a subfolder only has one main file (even with multiple part files), no barrel is created - the main file is exported directly in the parent barrel.
 
 ### Automatic Naming
 
