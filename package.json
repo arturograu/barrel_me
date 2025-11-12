@@ -2,7 +2,7 @@
   "name": "barrel-me",
   "displayName": "Barrel Me",
   "description": "Generate Dart barrel files easily for Flutter and Dart projects",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "arturograu",
   "icon": "icon.png",
   "engines": {
