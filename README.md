@@ -14,14 +14,16 @@ A Visual Studio Code extension for Dart and Flutter projects that makes creating
 
 🔄 **Smart Detection**: Automatically excludes existing barrel files and main.dart.
 
+🚀 **Quick Creation**: Press Enter without typing to automatically use the folder name as the barrel name.
+
 ## Usage
 
 ### Creating a Barrel File
 
 1. **Right-click** on a folder in your Dart or Flutter project
 2. Select **"Create Barrel"** from the context menu
-3. Enter a name for your barrel file (e.g., `auth`, `models`)
-4. Press Enter
+3. Enter a name for your barrel file (e.g., `auth`, `models`) or press Enter to use the folder name
+4. The barrel file(s) will be created automatically
 
 The extension will:
 
@@ -49,7 +51,7 @@ lib/features/auth/
 
 ### Non-Recursive Mode (default)
 
-Right-click on `auth/` → "Create Barrel" → Enter `auth`:
+Right-click on `auth/` → "Create Barrel" → Press Enter (or type `auth`):
 
 ```dart
 export 'login_page.dart';
@@ -58,9 +60,11 @@ export 'signup_page.dart';
 
 This creates a single barrel file that exports only the files in the current directory.
 
+> **💡 Tip:** Just press Enter to automatically use the folder name (`auth`) as the barrel filename!
+
 ### Recursive Mode (when enabled in settings)
 
-With `barrelMe.recursive: true`, right-click on `auth/` → "Create Barrel" → Enter `auth`:
+With `barrelMe.recursive: true`, right-click on `auth/` → "Create Barrel" → Press Enter:
 
 This creates **hierarchical barrel files**:
 
@@ -92,6 +96,19 @@ This hierarchical approach:
 - ✅ Parent barrel exports subfolder barrels (not individual files)
 - ✅ Better organization for large codebases
 - ✅ Each module can be imported independently
+
+### Automatic Naming
+
+When you press Enter without typing a name, the extension automatically converts the folder name to follow Dart naming conventions (snake_case):
+
+| Folder Name     | Generated Barrel     |
+| --------------- | -------------------- |
+| `auth`          | `auth.dart`          |
+| `AuthPages`     | `auth_pages.dart`    |
+| `user-profile`  | `user_profile.dart`  |
+| `shopping_cart` | `shopping_cart.dart` |
+
+You can always override this by typing a custom name before pressing Enter.
 
 ## Configuration
 

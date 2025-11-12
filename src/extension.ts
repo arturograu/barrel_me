@@ -24,13 +24,20 @@ export function activate(context: vscode.ExtensionContext) {
           return;
         }
 
-        const barrelName = await vscode.window.showInputBox({
-          prompt: "Enter the barrel file name (without .dart extension)",
-          placeHolder: "e.g., auth, models",
+        // Get the folder name to use as default
+        const folderName = path.basename(uri.fsPath);
+        const defaultBarrelName = toSnakeCase(folderName);
+
+        const barrelNameInput = await vscode.window.showInputBox({
+          prompt:
+            "Enter the barrel file name (or press Enter to use folder name)",
+          placeHolder: `Default: ${defaultBarrelName}`,
           validateInput: (value: string) => {
+            // Allow empty input (will use default)
             if (!value || value.trim() === "") {
-              return "File name cannot be empty";
+              return null;
             }
+            // Validate if user provides a name
             if (!/^[a-z_][a-z0-9_]*$/.test(value)) {
               return "File name must follow Dart naming conventions (lowercase, underscores, no spaces)";
             }
@@ -38,9 +45,12 @@ export function activate(context: vscode.ExtensionContext) {
           },
         });
 
-        if (!barrelName) {
-          return; // User cancelled
+        // User cancelled (pressed Escape)
+        if (barrelNameInput === undefined) {
+          return;
         }
+
+        const barrelName = barrelNameInput.trim() || defaultBarrelName;
 
         const config = vscode.workspace.getConfiguration("barrelMe");
         const excludeFolders: string[] = config.get("exclude", [
@@ -306,6 +316,18 @@ function generateBarrelContent(dartFiles: string[], basePath: string): string {
     .join("\n");
 
   return exports + "\n";
+}
+
+/**
+ * Converts a string to snake_case following Dart naming conventions
+ */
+function toSnakeCase(str: string): string {
+  return str
+    .replace(/([A-Z])/g, "_$1") // Add underscore before capital letters
+    .replace(/[-\s]+/g, "_") // Replace hyphens and spaces with underscores
+    .replace(/^_/, "") // Remove leading underscore
+    .toLowerCase() // Convert to lowercase
+    .replace(/_{2,}/g, "_"); // Replace multiple underscores with single underscore
 }
 
 export function deactivate() {}
