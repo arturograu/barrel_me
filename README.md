@@ -1,4 +1,4 @@
-# Barrel Me 🎯
+# Barrel Me 🛢️
 
 A Visual Studio Code extension for Dart and Flutter projects that makes creating barrel files effortless.
 
