@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
           "test",
           "generated",
         ]);
-        const recursive: boolean = config.get("recursive", false);
+        const recursive: boolean = config.get("recursive", true);
         const excludeFiles: string[] = config.get("excludeFiles", [
           "main.dart",
         ]);

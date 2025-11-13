@@ -52,24 +52,9 @@ lib/features/auth/
       └── user.dart
 ```
 
-### Non-Recursive Mode (default)
+### Hierarchical Barrel Mode (default)
 
 Right-click on `auth/` → "Create Barrel":
-
-**Generated `auth/auth.dart`:**
-
-```dart
-export 'login_page.dart';
-export 'signup_page.dart';
-```
-
-This creates a single barrel file (`auth.dart`) that exports **only the Dart files in the current directory** - subdirectories are ignored.
-
-> **💡 Tip:** The barrel filename automatically matches the folder name!
-
-### Recursive Mode (when enabled in settings)
-
-With `barrelMe.recursive: true`, right-click on `auth/` → "Create Barrel":
 
 This creates **hierarchical barrel files**:
 
@@ -104,6 +89,27 @@ This hierarchical approach:
 - ✅ **Smart conflict resolution**: If a file has the same name as its folder, the barrel is named `{folder}_barrel.dart`
 - ✅ **Single-file optimization**: Subfolders with only one main file are exported directly (no barrel created)
 - ✅ **Part file handling**: Automatically excludes part files - only main files are exported
+
+### Non-Recursive Mode (optional)
+
+To create a single flat barrel file without hierarchical structure, disable recursive mode:
+
+```json
+{
+  "barrelMe.recursive": false
+}
+```
+
+Right-click on `auth/` → "Create Barrel":
+
+**Generated `auth/auth.dart`:**
+
+```dart
+export 'login_page.dart';
+export 'signup_page.dart';
+```
+
+This creates a single barrel file that exports **only files in the current directory** - subdirectories are ignored.
 
 ### Smart Conflict Resolution
 
@@ -222,18 +228,19 @@ Folders to exclude when scanning for Dart files.
 
 ### `barrelMe.recursive`
 
-Enable hierarchical barrel file generation. When enabled:
+Enable hierarchical barrel file generation (deep recursion). When enabled:
 
-- Creates a barrel file in each immediate subfolder
+- Creates barrel files at all nesting levels
 - Creates a parent barrel that exports the subfolder barrels
 - Each subfolder's barrel exports files only within that subfolder
+- Processes complex nested folder structures
 
-**Default:** `false`
+**Default:** `true`
 
-**Example:**
+**Example to disable (flat mode):**
 
 ```json
-"barrelMe.recursive": true
+"barrelMe.recursive": false
 ```
 
 ### `barrelMe.excludeFiles`
@@ -296,7 +303,7 @@ You can also access the barrel creation command from the Command Palette:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/barrel-me.git
+git clone https://github.com/arturograu/barrel_me.git
 cd barrel-me
 
 # Install dependencies
@@ -335,26 +342,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Issues
 
-If you encounter any problems or have suggestions, please file an issue on the [GitHub repository](https://github.com/yourusername/barrel-me/issues).
+If you encounter any problems or have suggestions, please file an issue on the [GitHub repository](https://github.com/arturograu/barrel_me/issues).
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Changelog
-
-### 0.0.1 (Initial Release)
-
-- ✨ Create barrel files from context menu
-- ⚙️ Configurable exclude folders and files
-- 🔄 Optional recursive scanning
-- 🎨 Smart barrel file detection
-- ✅ Dart naming convention validation
-
-## Acknowledgments
-
-Inspired by the [Flutter Bloc Extension](https://marketplace.visualstudio.com/items?itemName=FelixAngelov.bloc) by Felix Angelov.
-
 ---
 
-**Enjoy creating barrel files! 🎯**
+**Enjoy creating barrel files! 🛢️**

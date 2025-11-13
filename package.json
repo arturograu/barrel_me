@@ -2,7 +2,7 @@
   "name": "barrel-me",
   "displayName": "Barrel Me",
   "description": "Generate Dart barrel files easily for Flutter and Dart projects",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "arturograu",
   "icon": "icon.png",
   "engines": {
@@ -52,7 +52,7 @@
         },
         "barrelMe.recursive": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Include subfolders when scanning for Dart files"
         },
         "barrelMe.excludeFiles": {

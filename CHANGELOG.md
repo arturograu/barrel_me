@@ -2,6 +2,28 @@
 
 All notable changes to the "Barrel Me" extension will be documented in this file.
 
+## [0.2.0]
+
+### Changed
+
+- **Recursive mode is now enabled by default**
+  - Hierarchical barrel generation is now the default behavior
+  - Creates deep nested barrel structures automatically
+  - Better developer experience for complex projects
+  - Can be disabled by setting `barrelMe.recursive: false` for flat mode
+
+### Why this change?
+
+The recursive/hierarchical mode is now mature and powerful enough to be the default:
+
+- Deep recursion handles any nesting level
+- Smart conflict resolution prevents data loss
+- Single-file optimization avoids unnecessary barrels
+- Part file detection works seamlessly
+- Import migration makes adoption effortless
+
+For simpler use cases, non-recursive mode is still available via settings.
+
 ## [0.1.0]
 
 ### Added
